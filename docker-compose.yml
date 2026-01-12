@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080" # Change to "8081:8081" if 8080 is conflicted
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ep-bold-glitter-a1blut3a-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      SPRING_DATASOURCE_USERNAME: neondb_owner
+      SPRING_DATASOURCE_PASSWORD: npg_Kp5DyjLS0RnW
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update # Or 'create' for first run
+      SPRING_JPA_SHOW_SQL: true # For debugging
