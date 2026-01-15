@@ -1,7 +1,6 @@
 package com.mekong.smart_service_booking.config;
 
 import com.mekong.smart_service_booking.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,10 +13,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@RequiredArgsConstructor
 public class ApplicationConfig {
 
     private final UserRepository repository;
+
+    // Explicit constructor to resolve "variable repository not initialized" 
+    // and ensure Spring can perform Constructor Injection.
+    public ApplicationConfig(UserRepository repository) {
+        this.repository = repository;
+    }
 
     @Bean
     public UserDetailsService userDetailsService() {

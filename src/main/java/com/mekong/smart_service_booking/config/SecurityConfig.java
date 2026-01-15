@@ -1,6 +1,7 @@
 package com.mekong.smart_service_booking.config;
 
-import lombok.RequiredArgsConstructor;
+import com.mekong.smart_service_booking.security.JwtAuthenticationFilter;
+import com.mekong.smart_service_booking.security.JwtAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -11,18 +12,25 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.mekong.smart_service_booking.security.JwtAuthenticationFilter;
-import com.mekong.smart_service_booking.security.JwtAuthenticationEntryPoint;
-
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationEntryPoint jwtEntryPoint;
+
+    // Explicit constructor fixes the "variable not initialized" error
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthFilter,
+            AuthenticationProvider authenticationProvider,
+            JwtAuthenticationEntryPoint jwtEntryPoint
+    ) {
+        this.jwtAuthFilter = jwtAuthFilter;
+        this.authenticationProvider = authenticationProvider;
+        this.jwtEntryPoint = jwtEntryPoint;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -30,7 +38,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Login & Register
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/provider/**").hasRole("PROVIDER")
                 .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
