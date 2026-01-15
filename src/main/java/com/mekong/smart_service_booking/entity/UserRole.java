@@ -2,6 +2,7 @@ package com.mekong.smart_service_booking.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -10,6 +11,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "user_roles")
 @Data
+@NoArgsConstructor
 public class UserRole {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -26,4 +28,8 @@ public class UserRole {
     @CreationTimestamp
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
+
+    // Explicitly add these if compiler fails to find Lombok symbols
+    public Role getRole() { return this.role; }
+    public User getUser() { return this.user; }
 }

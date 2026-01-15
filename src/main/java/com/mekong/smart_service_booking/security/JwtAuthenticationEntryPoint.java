@@ -13,8 +13,11 @@ import java.io.IOException;
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
-        // Respond with 401 Unauthorized when authentication fails
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException == null ? "Unauthorized" : authException.getMessage());
+    public void commence(HttpServletRequest request, HttpServletResponse response, 
+                         AuthenticationException authException) throws IOException, ServletException {
+        
+        response.setContentType("application/json");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.getOutputStream().println("{ \"status\": 401, \"message\": \"Unauthorized: Authentication token is missing or invalid.\" }");
     }
 }
