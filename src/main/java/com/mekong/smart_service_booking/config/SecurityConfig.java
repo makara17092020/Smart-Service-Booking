@@ -38,13 +38,24 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/provider/**").hasRole("PROVIDER")
-                .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
-                .anyRequest().authenticated()
-            )
+            // 1. Public Auth endpoints
+            .requestMatchers("/api/auth/**").permitAll()
+            
+            // 2. Updated Swagger/OpenAPI paths (More explicit)
+            .requestMatchers(
+                "/v3/api-docs",
+                "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html"
+            ).permitAll()
+            
+            // 3. Role-based access
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
+            .requestMatchers("/api/provider/**").hasRole("PROVIDER")
+            .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
+            
+            .anyRequest().authenticated()
+        )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
