@@ -27,4 +27,9 @@ public class User {
 
     @Column(nullable = false)
     private String role; 
+
+    // Some existing databases expect an 'enabled' column (NOT NULL).
+    // Default to true for newly registered users so INSERT doesn't fail when the DB has a NOT NULL constraint.
+    @Column(nullable = false)
+    private Boolean enabled = true;
 }
