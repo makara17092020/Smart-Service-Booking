@@ -1,6 +1,8 @@
 package com.mekong.smart_service_booking.controller;
 
+import com.mekong.smart_service_booking.dto.Request.LoginRequest;
 import com.mekong.smart_service_booking.dto.Request.RegisterRequest;
+import com.mekong.smart_service_booking.dto.Response.LoginResponse;
 import com.mekong.smart_service_booking.dto.Response.RegisterResponse;
 import com.mekong.smart_service_booking.service.AuthService;
 import jakarta.validation.Valid;
@@ -19,6 +21,16 @@ public class AuthController {
     public ResponseEntity<RegisterResponse> registerCustomer(@Valid @RequestBody RegisterRequest request) {
         RegisterResponse response = authService.registerCustomer(
             request.getFullName(),
+            request.getEmail(),
+            request.getPassword()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.loginUser(
             request.getEmail(),
             request.getPassword()
         );
