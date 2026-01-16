@@ -1,0 +1,29 @@
+{
+  "properties": [
+    {
+      "name": "cloudinary.cloud-name",
+      "type": "java.lang.String",
+      "description": "A description for 'cloudinary.cloud-name'"
+    },
+    {
+      "name": "cloudinary.upload-folder",
+      "type": "java.lang.String",
+      "description": "A description for 'cloudinary.upload-folder'"
+    },
+    {
+      "name": "cloudinary.api-key",
+      "type": "java.lang.String",
+      "description": "A description for 'cloudinary.api-key'"
+    },
+    {
+      "name": "cloudinary.api-secret",
+      "type": "java.lang.String",
+      "description": "A description for 'cloudinary.api-secret'"
+    },
+    {
+      "name": "spring.mail.enabled",
+      "type": "java.lang.String",
+      "description": "A description for 'spring.mail.enabled'"
+    }
+  ]
+}
