@@ -1,20 +1,13 @@
-# Stage 1: Build the app with Maven on Java 21
-FROM maven:3.9-amazoncorretto-21 AS build
-WORKDIR /app
+## Runtime-only Dockerfile
+## NOTE: This Dockerfile expects the application JAR to be built locally (target/*.jar).
+## Build the project locally first: ./mvnw -DskipTests package
 
-# Copy project files
-COPY pom.xml .
-COPY src ./src
-
-# Build the application
-RUN mvn clean package -DskipTests
-
-# Stage 2: Run the app on Java 21 (Alpine for smaller image size)
 FROM amazoncorretto:21-alpine
 WORKDIR /app
 
-# Copy the built JAR from the build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy the locally-built JAR into the image
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
