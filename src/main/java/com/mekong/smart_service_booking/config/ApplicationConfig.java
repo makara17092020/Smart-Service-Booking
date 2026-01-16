@@ -11,22 +11,34 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+import java.util.Collections;
 
 @Configuration
 public class ApplicationConfig {
 
     private final UserRepository repository;
 
-    // Explicit constructor to resolve "variable repository not initialized" 
-    // and ensure Spring can perform Constructor Injection.
     public ApplicationConfig(UserRepository repository) {
         this.repository = repository;
     }
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> repository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        return username -> {
+            com.mekong.smart_service_booking.entity.User appUser = repository.findByEmail(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+            return new User(
+                    appUser.getEmail(),
+                    appUser.getPassword(),
+                    Collections.singletonList(
+                            new SimpleGrantedAuthority("ROLE_" + appUser.getRole())
+                    )
+            );
+        };
     }
 
     @Bean

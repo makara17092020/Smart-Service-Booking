@@ -1,10 +1,14 @@
 package com.mekong.smart_service_booking.dto.Response;
 
+import lombok.*;
 import java.util.Map;
 
-public record ErrorResponse(
-    int status,
-    String message,
-    long timestamp,
-    Map<String, String> errors // Used for validation field errors
-) {}
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class ErrorResponse {
+    private int status;
+    private String message;
+    private long timestamp;
+    private Map<String, String> errors;
+}
