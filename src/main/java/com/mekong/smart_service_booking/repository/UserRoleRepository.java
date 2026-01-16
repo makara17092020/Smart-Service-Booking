@@ -1,4 +1,3 @@
-
 package com.mekong.smart_service_booking.repository;
 
 import com.mekong.smart_service_booking.entity.UserRole;
