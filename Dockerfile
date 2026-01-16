@@ -10,8 +10,13 @@ WORKDIR /app
 COPY pom.xml ./
 COPY src ./src
 
-# Build the application (skip tests for speed in CI/redeploys)
-RUN mvn -B -DskipTests clean package
+# Tune Maven JVM for constrained builder environments (Render) and limit parallelism
+# to reduce memory pressure. Adjust values if your builder allows more RAM.
+ENV MAVEN_OPTS="-Xmx1024m -XX:MaxMetaspaceSize=256m"
+
+# Build the application (skip tests for speed in CI/redeploys). Use -T1C to avoid
+# aggressive parallel builds which can increase memory usage.
+RUN mvn -B -DskipTests -T 1C clean package
 
 # Stage 2: runtime image
 FROM amazoncorretto:21-alpine
