@@ -16,7 +16,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/register/customer")
+    @PostMapping("/register")
     public ResponseEntity<RegisterResponse> registerCustomer(@Valid @RequestBody RegisterRequest request) {
         User savedUser = authService.registerCustomer(
             request.getFullName(), 
