@@ -16,7 +16,6 @@ import org.springframework.boot.CommandLineRunner;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Collections;
 
 @Component
 @Profile({"local","default"}) // run when profile is 'local' or no profile (default)
