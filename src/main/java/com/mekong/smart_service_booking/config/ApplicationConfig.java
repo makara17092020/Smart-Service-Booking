@@ -28,16 +28,18 @@ public class ApplicationConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return username -> {
-            com.mekong.smart_service_booking.entity.User appUser = repository.findByEmail(username)
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        com.mekong.smart_service_booking.entity.User appUser = repository.findByEmail(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-            return new User(
-                    appUser.getEmail(),
-                    appUser.getPassword(),
-                    Collections.singletonList(
-                            new SimpleGrantedAuthority("ROLE_" + appUser.getRole())
-                    )
-            );
+        java.util.List<SimpleGrantedAuthority> authorities = appUser.getRoles().stream()
+            .map(r -> new SimpleGrantedAuthority("ROLE_" + r.getName()))
+            .toList();
+
+        return new User(
+            appUser.getEmail(),
+            appUser.getPassword(),
+            authorities
+        );
         };
     }
 

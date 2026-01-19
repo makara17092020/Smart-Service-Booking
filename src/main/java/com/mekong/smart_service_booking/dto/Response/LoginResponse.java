@@ -10,7 +10,7 @@ public class LoginResponse {
     private UUID id;
     private String fullName;
     private String email;
-    private String role;
+    private java.util.List<String> roles;
     private String message;
     private String token;
 }

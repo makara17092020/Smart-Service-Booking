@@ -3,7 +3,9 @@ package com.mekong.smart_service_booking.service;
 import com.mekong.smart_service_booking.dto.Response.LoginResponse;
 import com.mekong.smart_service_booking.dto.Response.RegisterResponse;
 import com.mekong.smart_service_booking.entity.User;
+import com.mekong.smart_service_booking.entity.Role;
 import com.mekong.smart_service_booking.repository.UserRepository;
+import com.mekong.smart_service_booking.repository.RoleRepository;
 import com.mekong.smart_service_booking.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,6 +23,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RoleRepository roleRepository;
 
     public RegisterResponse registerCustomer(String fullName, String email, String password) {
         if (userRepository.existsByEmail(email)) {
@@ -31,15 +34,26 @@ public class AuthService {
         user.setFullName(fullName);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
-        user.setRole("CUSTOMER");
+        // assign CUSTOMER role
+        Role customerRole = roleRepository.findByName("CUSTOMER").orElseGet(() -> {
+            Role r = new Role();
+            r.setName("CUSTOMER");
+            r.setDescription("Default customer role");
+            return roleRepository.save(r);
+        });
+        user.getRoles().add(customerRole);
 
         User saved = userRepository.save(user);
 
         // Build a Spring Security UserDetails to sign the token
+        java.util.List<SimpleGrantedAuthority> authorities = saved.getRoles().stream()
+            .map(r -> new SimpleGrantedAuthority("ROLE_" + r.getName()))
+            .toList();
+
         UserDetails principal = new org.springframework.security.core.userdetails.User(
             saved.getEmail(),
             saved.getPassword(),
-            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + saved.getRole()))
+            authorities
         );
 
         String token = jwtService.generateToken(principal);
@@ -48,7 +62,7 @@ public class AuthService {
             saved.getId(),
             saved.getFullName(),
             saved.getEmail(),
-            saved.getRole(),
+            saved.getRoles().stream().map(Role::getName).toList(),
             "Registration successful",
             token
         );
@@ -74,10 +88,14 @@ public class AuthService {
         }
 
         // Build a Spring Security UserDetails to sign the token
+        java.util.List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+            .map(r -> new SimpleGrantedAuthority("ROLE_" + r.getName()))
+            .toList();
+
         UserDetails principal = new org.springframework.security.core.userdetails.User(
             user.getEmail(),
             user.getPassword(),
-            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
+            authorities
         );
 
         String token = jwtService.generateToken(principal);
@@ -86,7 +104,7 @@ public class AuthService {
             user.getId(),
             user.getFullName(),
             user.getEmail(),
-            user.getRole(),
+            user.getRoles().stream().map(Role::getName).toList(),
             "Login successful",
             token
         );
