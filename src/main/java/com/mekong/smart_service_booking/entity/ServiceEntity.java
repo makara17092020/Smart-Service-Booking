@@ -1,39 +1,29 @@
-
 package com.mekong.smart_service_booking.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import lombok.*;
 
 @Entity
 @Table(name = "services")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ServiceEntity {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "provider_id")
-    private User provider;
-
-    private String title;
+    @Column(nullable = false)
+    private String name;
 
     private String description;
+    private Double price;
 
-    private BigDecimal price;
-
-    @Column(name = "duration_minutes")
-    private int durationMinutes;
-
-    @Column(name = "is_active")
-    private boolean isActive = true;
-
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    @JsonBackReference // This hides the category field within a service to stop the loop
+    private Category category;
 }
