@@ -3,6 +3,7 @@ package com.mekong.smart_service_booking.entity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.UUID; // Import UUID
 
 @Entity
 @Table(name = "services")
@@ -13,8 +14,9 @@ import lombok.*;
 public class ServiceEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.AUTO) // Changed to AUTO for UUID generation
+    @Column(columnDefinition = "UUID", updatable = false, nullable = false)
+    private UUID id; // Changed from Long to UUID
 
     @Column(nullable = false)
     private String name;
@@ -24,6 +26,6 @@ public class ServiceEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    @JsonBackReference // This hides the category field within a service to stop the loop
+    @JsonBackReference
     private Category category;
 }
