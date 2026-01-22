@@ -2,9 +2,9 @@ package com.mekong.smart_service_booking.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.UUID;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -12,6 +12,8 @@ import java.util.HashSet;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
+@ToString
 public class User {
 
     @Id
@@ -33,10 +35,10 @@ public class User {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
-    // Some existing databases expect an 'enabled' column (NOT NULL).
-    // Default to true for newly registered users so INSERT doesn't fail when the DB has a NOT NULL constraint.
     @Column(nullable = false)
+    @Builder.Default
     private Boolean enabled = true;
 }
