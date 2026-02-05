@@ -40,33 +40,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // 1. Enable CORS using the bean defined below
+            // Enable CORS and disable CSRF
             .cors(Customizer.withDefaults())
-            // 2. Disable CSRF (standard for Stateless APIs)
             .csrf(csrf -> csrf.disable())
+            
+            // Handle unauthorized/forbidden errors
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint(jwtEntryPoint)
                 .accessDeniedHandler(customAccessDeniedHandler())
             )
+            
             .authorizeHttpRequests(auth -> auth
-                // Allow Preflight OPTIONS requests for all paths
+                // Allow browser OPTIONS preflight requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 
-                // Public Auth endpoints
+                // Public Auth & Swagger
                 .requestMatchers("/api/auth/**").permitAll()
-                
-                // Swagger Documentation
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                // Categories Access Logic
-                // If you want categories to be visible BEFORE login, change hasAnyRole to permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").hasAnyRole("ADMIN", "CUSTOMER", "PROVIDER")
-                .requestMatchers("/api/categories/**").hasRole("ADMIN")
+                // PUBLIC READ: Allow landing page to see categories and services without logging in
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/services/**").permitAll()
+                
+                // ADMIN ONLY: Post/Put/Delete Categories
+                .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
 
-                // Admin specific paths
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 
-                // All other requests require a valid JWT
+                // Everything else requires a login
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -76,36 +79,20 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // 3. CORS Configuration Source Bean
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // ALLOWED ORIGINS: Add your local and production frontend URLs here
+        // Match this to your frontend URL
         configuration.setAllowedOrigins(List.of(
             "http://localhost:3000", 
             "http://localhost:5173", 
-            "https://smart-service-booking-develop.onrender.com" // If your frontend is also here
+            "https://smart-service-booking-develop.onrender.com"
         ));
         
-        // ALLOWED METHODS
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        
-        // ALLOWED HEADERS
-        configuration.setAllowedHeaders(Arrays.asList(
-            "Authorization", 
-            "Content-Type", 
-            "X-Requested-With", 
-            "Accept", 
-            "Origin", 
-            "Access-Control-Request-Method", 
-            "Access-Control-Request-Headers"
-        ));
-        
-        // Allow cookies/auth headers
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
         configuration.setAllowCredentials(true);
-        
-        // Cache preflight response for 1 hour
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -118,11 +105,7 @@ public class SecurityConfig {
         return (request, response, accessDeniedException) -> {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
-            String jsonResponse = "{"
-                + "\"status\": 403,"
-                + "\"message\": \"Access Denied: You do not have permission to perform this action.\","
-                + "\"timestamp\": " + System.currentTimeMillis()
-                + "}";
+            String jsonResponse = "{\"status\": 403, \"message\": \"Forbidden: Access Denied\"}";
             response.getWriter().write(jsonResponse);
         };
     }
