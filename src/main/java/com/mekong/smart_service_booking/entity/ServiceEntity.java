@@ -1,9 +1,8 @@
 package com.mekong.smart_service_booking.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.UUID; // Import UUID
+import java.util.UUID;
 
 @Entity
 @Table(name = "services")
@@ -14,18 +13,27 @@ import java.util.UUID; // Import UUID
 public class ServiceEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO) // Changed to AUTO for UUID generation
-    @Column(columnDefinition = "UUID", updatable = false, nullable = false)
-    private UUID id; // Changed from Long to UUID
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     @Column(nullable = false)
     private String name;
 
     private String description;
+
     private Double price;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    @JsonBackReference
+    private String duration; // e.g., "2 hours"
+
+    // RELATIONS
+
+    // Link to Category (Which uses Long ID)
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    // Link to Provider (User)
+    @ManyToOne
+    @JoinColumn(name = "provider_id", nullable = false)
+    private User provider;
 }
