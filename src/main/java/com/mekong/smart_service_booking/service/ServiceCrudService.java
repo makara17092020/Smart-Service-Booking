@@ -20,72 +20,70 @@ public class ServiceCrudService {
     private final CategoryRepository categoryRepository;
     private final CurrentUserService currentUserService;
 
-    // 1. READ ALL
     public List<ServiceEntity> getAllServices() {
         return serviceRepository.findAll();
     }
 
-    // 2. READ ONE
     public ServiceEntity getServiceById(UUID id) {
         return serviceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Service not found with ID: " + id));
     }
 
-    // 3. CREATE
     @Transactional
     public ServiceEntity createService(ServiceEntity service) {
         User user = currentUserService.getCurrentUser();
-        if (user == null) throw new RuntimeException("Unauthorized: Please log in.");
+        if (user == null) throw new RuntimeException("Unauthorized");
 
-        // Check Role
-        if (!currentUserService.hasRole("ADMIN") && !currentUserService.hasRole("PROVIDER")) {
-            throw new RuntimeException("Access Denied: Only Providers or Admins can create services.");
+        // Sync redundant columns for DB compatibility
+        if (service.getName() != null && service.getTitle() == null) {
+            service.setTitle(service.getName());
         }
+        
+        // Sync both active status columns
+        boolean status = service.getIsActive() != null ? service.getIsActive() : true;
+        service.setIsActive(status);
+        service.setActive(status);
 
-        // Validate Category ID (Long)
-        if (service.getCategory() == null || service.getCategory().getId() == null) {
-            throw new RuntimeException("Category ID is required!");
-        }
+        if (service.getDurationMinutes() == null) throw new RuntimeException("Duration is required");
 
         Category cat = categoryRepository.findById(service.getCategory().getId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
-        service.setCategory(cat);
 
+        service.setCategory(cat);
         service.setProvider(user);
+        
         return serviceRepository.save(service);
     }
 
-    // 4. UPDATE
     @Transactional
     public ServiceEntity updateService(UUID id, ServiceEntity updatedData) {
         ServiceEntity existing = getServiceById(id);
         User user = currentUserService.getCurrentUser();
 
-        // Check Ownership
-        if (!currentUserService.hasRole("ADMIN")) {
-            if (!existing.getProvider().getId().equals(user.getId())) {
-                throw new RuntimeException("Forbidden: You do not own this service.");
-            }
+        if (!currentUserService.hasRole("ADMIN") && !existing.getProvider().getId().equals(user.getId())) {
+            throw new RuntimeException("Forbidden");
         }
 
         existing.setName(updatedData.getName());
+        existing.setTitle(updatedData.getName());
         existing.setDescription(updatedData.getDescription());
         existing.setPrice(updatedData.getPrice());
-        existing.setDuration(updatedData.getDuration());
+        existing.setDurationMinutes(updatedData.getDurationMinutes());
+        
+        if (updatedData.getIsActive() != null) {
+            existing.setIsActive(updatedData.getIsActive());
+            existing.setActive(updatedData.getIsActive());
+        }
 
         return serviceRepository.save(existing);
     }
 
-    // 5. DELETE
     @Transactional
     public void deleteService(UUID id) {
         ServiceEntity existing = getServiceById(id);
         User user = currentUserService.getCurrentUser();
-
-        if (!currentUserService.hasRole("ADMIN")) {
-            if (!existing.getProvider().getId().equals(user.getId())) {
-                throw new RuntimeException("Forbidden: You do not own this service.");
-            }
+        if (!currentUserService.hasRole("ADMIN") && !existing.getProvider().getId().equals(user.getId())) {
+            throw new RuntimeException("Forbidden");
         }
         serviceRepository.delete(existing);
     }
