@@ -5,7 +5,6 @@ import com.mekong.smart_service_booking.dto.Response.AvailabilityResponseDto;
 import com.mekong.smart_service_booking.entity.Availability;
 import com.mekong.smart_service_booking.entity.User;
 import com.mekong.smart_service_booking.repository.AvailabilityRepository;
-// Remove unused import: com.mekong.smart_service_booking.repository.UserRepository;
 import com.mekong.smart_service_booking.service.AvailabilityService;
 import com.mekong.smart_service_booking.service.CurrentUserService;
 import lombok.RequiredArgsConstructor;
@@ -24,21 +23,16 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
     private final AvailabilityRepository availabilityRepository;
     private final CurrentUserService currentUserService;
-    // FIX: Removed unused 'private final UserRepository userRepository;'
 
     @Override
     @Transactional
     public AvailabilityResponseDto createAvailability(AvailabilityRequestDto dto) {
         User currentUser = currentUserService.getCurrentUser();
-        
         validateTimeSlot(dto);
         
         if (availabilityRepository.existsOverlappingSlot(
-                currentUser.getId(), 
-                dto.getAvailableDate(), 
-                dto.getStartTime(), 
-                dto.getEndTime(), 
-                null)) {
+                currentUser.getId(), dto.getAvailableDate(), 
+                dto.getStartTime(), dto.getEndTime(), null)) {
             throw new IllegalArgumentException("This time slot overlaps with an existing availability.");
         }
 
@@ -47,21 +41,19 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                 .availableDate(dto.getAvailableDate())
                 .startTime(dto.getStartTime())
                 .endTime(dto.getEndTime())
-                // .isBooked(false) is handled by @Builder.Default now
                 .build();
 
-        Availability saved = availabilityRepository.save(availability);
-        return mapToDto(saved);
+        return mapToDto(availabilityRepository.save(availability));
     }
 
     @Override
     @Transactional
     public AvailabilityResponseDto updateAvailability(UUID id, AvailabilityRequestDto dto) {
-        Availability availability = availabilityRepository.findById(id)
+        // Use FetchProvider here too so we can verify the owner
+        Availability availability = availabilityRepository.findByIdFetchProvider(id)
                 .orElseThrow(() -> new RuntimeException("Availability not found"));
 
         User currentUser = currentUserService.getCurrentUser();
-        
         if (!availability.getProvider().getId().equals(currentUser.getId())) {
              throw new AccessDeniedException("You are not authorized to update this slot");
         }
@@ -69,11 +61,8 @@ public class AvailabilityServiceImpl implements AvailabilityService {
         validateTimeSlot(dto);
 
         if (availabilityRepository.existsOverlappingSlot(
-                currentUser.getId(), 
-                dto.getAvailableDate(), 
-                dto.getStartTime(), 
-                dto.getEndTime(), 
-                id)) {
+                currentUser.getId(), dto.getAvailableDate(), 
+                dto.getStartTime(), dto.getEndTime(), id)) {
             throw new IllegalArgumentException("This time slot overlaps with an existing availability.");
         }
 
@@ -81,33 +70,20 @@ public class AvailabilityServiceImpl implements AvailabilityService {
         availability.setStartTime(dto.getStartTime());
         availability.setEndTime(dto.getEndTime());
 
-        Availability updated = availabilityRepository.save(availability);
-        return mapToDto(updated);
+        return mapToDto(availabilityRepository.save(availability));
     }
 
     @Override
-    @Transactional
-    public void deleteAvailability(UUID id) {
-        Availability availability = availabilityRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Availability not found"));
-
-        User currentUser = currentUserService.getCurrentUser();
-        
-        if (!availability.getProvider().getId().equals(currentUser.getId())) {
-             throw new AccessDeniedException("You are not authorized to delete this slot");
-        }
-
-        availabilityRepository.delete(availability);
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public AvailabilityResponseDto getAvailabilityById(UUID id) {
-        Availability availability = availabilityRepository.findById(id)
+        // FIX: Use findByIdFetchProvider to prevent LazyInitializationException
+        Availability availability = availabilityRepository.findByIdFetchProvider(id)
                 .orElseThrow(() -> new RuntimeException("Availability not found"));
         return mapToDto(availability);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AvailabilityResponseDto> getAllByProvider(UUID providerId) {
         return availabilityRepository.findAllByProviderId(providerId).stream()
                 .map(this::mapToDto)
@@ -115,10 +91,23 @@ public class AvailabilityServiceImpl implements AvailabilityService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AvailabilityResponseDto> getByProviderAndDate(UUID providerId, LocalDate date) {
         return availabilityRepository.findAllByProviderIdAndAvailableDate(providerId, date).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteAvailability(UUID id) {
+        Availability availability = availabilityRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Availability not found"));
+        User currentUser = currentUserService.getCurrentUser();
+        if (!availability.getProvider().getId().equals(currentUser.getId())) {
+             throw new AccessDeniedException("Forbidden: Unauthorized deletion");
+        }
+        availabilityRepository.delete(availability);
     }
 
     private void validateTimeSlot(AvailabilityRequestDto dto) {

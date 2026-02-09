@@ -26,7 +26,6 @@ public class ServiceEntity {
     private String title;
 
     private String description;
-
     private Double price;
 
     @Column(name = "duration_minutes", nullable = false)
@@ -36,7 +35,6 @@ public class ServiceEntity {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    // ADD THIS: Your DB has both 'is_active' and 'active'
     @Builder.Default
     @Column(name = "active", nullable = false)
     private Boolean active = true;

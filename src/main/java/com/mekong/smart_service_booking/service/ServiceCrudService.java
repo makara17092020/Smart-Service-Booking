@@ -8,8 +8,12 @@ import com.mekong.smart_service_booking.repository.ServiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -19,6 +23,7 @@ public class ServiceCrudService {
     private final ServiceRepository serviceRepository;
     private final CategoryRepository categoryRepository;
     private final CurrentUserService currentUserService;
+    private final CloudStorageService cloudStorageService; // Uses your interface
 
     public List<ServiceEntity> getAllServices() {
         return serviceRepository.findAll();
@@ -26,25 +31,32 @@ public class ServiceCrudService {
 
     public ServiceEntity getServiceById(UUID id) {
         return serviceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Service not found with ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Service not found"));
     }
 
     @Transactional
-    public ServiceEntity createService(ServiceEntity service) {
+    public ServiceEntity createService(ServiceEntity service, MultipartFile imageFile) throws IOException {
         User user = currentUserService.getCurrentUser();
-        if (user == null) throw new RuntimeException("Unauthorized");
+        if (user == null) throw new RuntimeException("Unauthorized: Please log in.");
 
-        // Sync redundant columns for DB compatibility
-        if (service.getName() != null && service.getTitle() == null) {
-            service.setTitle(service.getName());
+        // Security Check
+        if (!currentUserService.hasRole("ADMIN") && !currentUserService.hasRole("PROVIDER")) {
+            throw new RuntimeException("Access Denied: Only Providers or Admins can create services.");
         }
-        
-        // Sync both active status columns
+
+        // Database Column Syncing
+        service.setTitle(service.getName());
         boolean status = service.getIsActive() != null ? service.getIsActive() : true;
         service.setIsActive(status);
         service.setActive(status);
 
-        if (service.getDurationMinutes() == null) throw new RuntimeException("Duration is required");
+        // Handle Image Upload using your CloudinaryService
+        if (imageFile != null && !imageFile.isEmpty()) {
+            Map<String, Object> uploadResult = cloudStorageService.upload(imageFile, new HashMap<>());
+            // Cloudinary returns the URL in "secure_url" or "url"
+            String imageUrl = (String) uploadResult.getOrDefault("secure_url", uploadResult.get("url"));
+            service.setImageUrl(imageUrl);
+        }
 
         Category cat = categoryRepository.findById(service.getCategory().getId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
@@ -56,12 +68,12 @@ public class ServiceCrudService {
     }
 
     @Transactional
-    public ServiceEntity updateService(UUID id, ServiceEntity updatedData) {
+    public ServiceEntity updateService(UUID id, ServiceEntity updatedData, MultipartFile imageFile) throws IOException {
         ServiceEntity existing = getServiceById(id);
         User user = currentUserService.getCurrentUser();
 
         if (!currentUserService.hasRole("ADMIN") && !existing.getProvider().getId().equals(user.getId())) {
-            throw new RuntimeException("Forbidden");
+            throw new RuntimeException("Forbidden: You do not own this service.");
         }
 
         existing.setName(updatedData.getName());
@@ -69,10 +81,11 @@ public class ServiceCrudService {
         existing.setDescription(updatedData.getDescription());
         existing.setPrice(updatedData.getPrice());
         existing.setDurationMinutes(updatedData.getDurationMinutes());
-        
-        if (updatedData.getIsActive() != null) {
-            existing.setIsActive(updatedData.getIsActive());
-            existing.setActive(updatedData.getIsActive());
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            Map<String, Object> uploadResult = cloudStorageService.upload(imageFile, new HashMap<>());
+            String imageUrl = (String) uploadResult.getOrDefault("secure_url", uploadResult.get("url"));
+            existing.setImageUrl(imageUrl);
         }
 
         return serviceRepository.save(existing);
@@ -81,10 +94,6 @@ public class ServiceCrudService {
     @Transactional
     public void deleteService(UUID id) {
         ServiceEntity existing = getServiceById(id);
-        User user = currentUserService.getCurrentUser();
-        if (!currentUserService.hasRole("ADMIN") && !existing.getProvider().getId().equals(user.getId())) {
-            throw new RuntimeException("Forbidden");
-        }
         serviceRepository.delete(existing);
     }
 }

@@ -3,12 +3,9 @@ package com.mekong.smart_service_booking.controller;
 import com.mekong.smart_service_booking.dto.Request.AvailabilityRequestDto;
 import com.mekong.smart_service_booking.dto.Response.AvailabilityResponseDto;
 import com.mekong.smart_service_booking.service.AvailabilityService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -23,40 +20,35 @@ public class AvailabilityController {
     private final AvailabilityService availabilityService;
 
     @PostMapping
-    @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<AvailabilityResponseDto> createAvailability(@Valid @RequestBody AvailabilityRequestDto dto) {
-        return new ResponseEntity<>(availabilityService.createAvailability(dto), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<AvailabilityResponseDto> updateAvailability(
-            @PathVariable UUID id,
-            @Valid @RequestBody AvailabilityRequestDto dto) {
-        return ResponseEntity.ok(availabilityService.updateAvailability(id, dto));
-    }
-
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('PROVIDER') or hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteAvailability(@PathVariable UUID id) {
-        availabilityService.deleteAvailability(id);
-        return ResponseEntity.noContent().build();
+    public AvailabilityResponseDto create(@RequestBody AvailabilityRequestDto dto) {
+        return availabilityService.createAvailability(dto);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AvailabilityResponseDto> getAvailabilityById(@PathVariable UUID id) {
-        return ResponseEntity.ok(availabilityService.getAvailabilityById(id));
+    public AvailabilityResponseDto getById(@PathVariable UUID id) {
+        return availabilityService.getAvailabilityById(id);
     }
 
     @GetMapping("/provider/{providerId}")
-    public ResponseEntity<List<AvailabilityResponseDto>> getProviderAvailability(@PathVariable UUID providerId) {
-        return ResponseEntity.ok(availabilityService.getAllByProvider(providerId));
+    public List<AvailabilityResponseDto> getByProvider(@PathVariable UUID providerId) {
+        return availabilityService.getAllByProvider(providerId);
     }
 
-    @GetMapping("/provider/{providerId}/date/{date}")
-    public ResponseEntity<List<AvailabilityResponseDto>> getProviderAvailabilityByDate(
+    @GetMapping("/provider/{providerId}/filter")
+    public List<AvailabilityResponseDto> getByDate(
             @PathVariable UUID providerId,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(availabilityService.getByProviderAndDate(providerId, date));
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return availabilityService.getByProviderAndDate(providerId, date);
+    }
+
+    @PutMapping("/{id}")
+    public AvailabilityResponseDto update(@PathVariable UUID id, @RequestBody AvailabilityRequestDto dto) {
+        return availabilityService.updateAvailability(id, dto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        availabilityService.deleteAvailability(id);
+        return ResponseEntity.noContent().build();
     }
 }
