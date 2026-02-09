@@ -1,42 +1,43 @@
 package com.mekong.smart_service_booking.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import lombok.*;
+import java.time.*;
 import java.util.UUID;
 
 @Entity
 @Table(name = "bookings")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+
 public class Booking {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "customer_id")
-    private User customer;
+    @Column(nullable = false)
+    private UUID customerId;
 
-    @ManyToOne
-    @JoinColumn(name = "service_id")
-    private ServiceEntity service;
+    @Column(nullable = false)
+     private UUID serviceId;
 
-    @Column(name = "booking_date")
+    @Column(nullable = false)
     private LocalDate bookingDate;
 
-    @Column(name = "start_time")
+    @Column(nullable = false)
     private LocalTime startTime;
 
-    @Column(name = "end_time")
+    @Column(nullable = false)
     private LocalTime endTime;
 
-    private String status = "PENDING";  // PENDING, APPROVED, REJECTED, CANCELED
+    @Column(nullable = false)
+    private String status;
 
-    @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    
 }
